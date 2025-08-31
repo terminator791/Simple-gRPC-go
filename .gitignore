@@ -30,3 +30,12 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Service binaries
+user-service/bin/
+order-service/bin/
+
+# Generated protobuf files are kept in the repo for simplicity
+# but could be excluded if generated in CI/CD
+# pkg/**/*.pb.go
+# proto/**/*.pb.go
