@@ -9,6 +9,9 @@ proto:
 	protoc --go_out=. --go_opt=paths=source_relative \
 		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
 		proto/order/order.proto
+	protoc --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		proto/product/product.proto
 
 # Build all services
 build: proto
@@ -16,6 +19,8 @@ build: proto
 	go build -o user-service/bin/user-service ./user-service/cmd
 	@echo "Building order-service..."
 	go build -o order-service/bin/order-service ./order-service/cmd
+	@echo "Building product-service..."
+	go build -o product-service/bin/product-service ./product-service/cmd
 
 # Run tests
 test:
@@ -29,6 +34,10 @@ user-service: proto
 # Build order service
 order-service: proto
 	go build -o order-service/bin/order-service ./order-service/cmd
+
+# Build product service
+product-service: proto
+	go build -o product-service/bin/product-service ./product-service/cmd
 
 # Install dependencies
 deps:
@@ -44,8 +53,8 @@ db-down:
 
 # Clean build artifacts
 clean:
-	rm -rf user-service/bin order-service/bin
-	rm -rf pkg/user/*.pb.go pkg/order/*.pb.go
+	rm -rf user-service/bin order-service/bin product-service/bin
+	rm -rf pkg/user/*.pb.go pkg/order/*.pb.go pkg/product/*.pb.go
 
 # Setup development environment
 setup: deps proto
