@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/terminator791/Simple-gRPC-go/pkg/user";
+
+// User service definition
+service UserService {
+  // Get user by ID
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  // Create a new user
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+}
+
+// Request message for GetUser
+message GetUserRequest {
+  int64 user_id = 1;
+}
+
+// Response message for GetUser
+message GetUserResponse {
+  User user = 1;
+}
+
+// Request message for CreateUser
+message CreateUserRequest {
+  string email = 1;
+  string name = 2;
+}
+
+// Response message for CreateUser
+message CreateUserResponse {
+  User user = 1;
+}
+
+// User model
+message User {
+  int64 id = 1;
+  string email = 2;
+  string name = 3;
+  string created_at = 4;
+}
