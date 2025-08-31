@@ -5,16 +5,20 @@ import (
 )
 
 type Config struct {
-	DatabaseURL     string
-	Port           string
-	UserServiceAddr string
+	DatabaseURL        string
+	Port              string
+	UserServiceAddr   string
+	ProductServiceAddr string
+	JWTSecret         string
 }
 
 func Load() *Config {
 	return &Config{
-		DatabaseURL:     getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5433/order_service?sslmode=disable"),
-		Port:           getEnv("PORT", "50052"),
-		UserServiceAddr: getEnv("USER_SERVICE_ADDR", "localhost:50051"),
+		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5433/order_service?sslmode=disable"),
+		Port:              getEnv("PORT", "50052"),
+		UserServiceAddr:   getEnv("USER_SERVICE_ADDR", "localhost:50051"),
+		ProductServiceAddr: getEnv("PRODUCT_SERVICE_ADDR", "localhost:50053"),
+		JWTSecret:         getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),
 	}
 }
 

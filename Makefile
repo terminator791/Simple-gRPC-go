@@ -12,6 +12,9 @@ proto:
 	protoc --go_out=. --go_opt=paths=source_relative \
 		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
 		proto/product/product.proto
+	protoc --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		proto/health/health.proto
 
 # Build all services
 build: proto
@@ -54,7 +57,7 @@ db-down:
 # Clean build artifacts
 clean:
 	rm -rf user-service/bin order-service/bin product-service/bin
-	rm -rf pkg/user/*.pb.go pkg/order/*.pb.go pkg/product/*.pb.go
+	rm -rf pkg/user/*.pb.go pkg/order/*.pb.go pkg/product/*.pb.go pkg/health/*.pb.go
 
 # Setup development environment
 setup: deps proto

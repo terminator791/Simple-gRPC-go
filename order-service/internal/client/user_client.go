@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/terminator791/Simple-gRPC-go/pkg/user"
@@ -17,13 +18,14 @@ import (
 type UserServiceClient struct {
 	client user.UserServiceClient
 	conn   *grpc.ClientConn
+	token  string
 }
 
 // Ensure UserServiceClient implements UserValidator interface
 var _ UserValidator = (*UserServiceClient)(nil)
 
 // NewUserServiceClient creates a new user service client
-func NewUserServiceClient(address string) (*UserServiceClient, error) {
+func NewUserServiceClient(address, serviceToken string) (*UserServiceClient, error) {
 	// Set up connection to the user service
 	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -35,6 +37,7 @@ func NewUserServiceClient(address string) (*UserServiceClient, error) {
 	return &UserServiceClient{
 		client: client,
 		conn:   conn,
+		token:  serviceToken,
 	}, nil
 }
 
@@ -46,6 +49,12 @@ func (c *UserServiceClient) Close() error {
 // ValidateUser checks if a user exists by calling the user service
 func (c *UserServiceClient) ValidateUser(ctx context.Context, userID int64) (*user.User, error) {
 	log.Printf("Validating user with ID: %d", userID)
+	
+	// Add authentication header
+	if c.token != "" {
+		md := metadata.Pairs("authorization", "Bearer "+c.token)
+		ctx = metadata.NewOutgoingContext(ctx, md)
+	}
 	
 	// Set timeout for the call
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
