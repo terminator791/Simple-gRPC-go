@@ -6,6 +6,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 	"github.com/terminator791/Simple-gRPC-go/user-service/internal/models"
 )
 
@@ -32,7 +33,7 @@ func Connect(databaseURL string) (*sqlx.DB, error) {
 
 func (r *UserRepository) GetByID(userID int64) (*models.User, error) {
 	var user models.User
-	query := `SELECT id, email, name, created_at FROM users WHERE id = $1`
+	query := `SELECT id, email, name, role, created_at FROM users WHERE id = $1`
 	
 	err := r.db.Get(&user, query, userID)
 	if err != nil {
@@ -45,17 +46,45 @@ func (r *UserRepository) GetByID(userID int64) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) Create(email, name string) (*models.User, error) {
+func (r *UserRepository) Create(email, name, password string) (*models.User, error) {
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
 	var user models.User
 	query := `
-		INSERT INTO users (email, name) 
-		VALUES ($1, $2) 
-		RETURNING id, email, name, created_at`
+		INSERT INTO users (email, name, password_hash, role) 
+		VALUES ($1, $2, $3, $4) 
+		RETURNING id, email, name, role, created_at`
 	
-	err := r.db.Get(&user, query, email, name)
+	err = r.db.Get(&user, query, email, name, string(hashedPassword), "user")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 	
 	return &user, nil
+}
+
+// GetByEmail retrieves a user by email (used for login)
+func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
+	var user models.User
+	query := `SELECT id, email, name, password_hash, role, created_at FROM users WHERE email = $1`
+	
+	err := r.db.Get(&user, query, email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+	
+	return &user, nil
+}
+
+// VerifyPassword verifies a password against the stored hash
+func (r *UserRepository) VerifyPassword(hashedPassword, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return err == nil
 }
