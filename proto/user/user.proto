@@ -10,6 +10,8 @@ service UserService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   // Create a new user
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  // Login user and get JWT token
+  rpc LoginUser(LoginUserRequest) returns (LoginUserResponse);
 }
 
 // Request message for GetUser
@@ -26,6 +28,7 @@ message GetUserResponse {
 message CreateUserRequest {
   string email = 1;
   string name = 2;
+  string password = 3;
 }
 
 // Response message for CreateUser
@@ -33,10 +36,23 @@ message CreateUserResponse {
   User user = 1;
 }
 
+// Request message for LoginUser
+message LoginUserRequest {
+  string email = 1;
+  string password = 2;
+}
+
+// Response message for LoginUser
+message LoginUserResponse {
+  User user = 1;
+  string token = 2;
+}
+
 // User model
 message User {
   int64 id = 1;
   string email = 2;
   string name = 3;
-  string created_at = 4;
+  string role = 4;
+  string created_at = 5;
 }

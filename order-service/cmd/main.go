@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/terminator791/Simple-gRPC-go/pkg/auth"
 	"github.com/terminator791/Simple-gRPC-go/pkg/order"
 	"github.com/terminator791/Simple-gRPC-go/order-service/internal/client"
 	"github.com/terminator791/Simple-gRPC-go/order-service/internal/config"
@@ -27,22 +28,41 @@ func main() {
 	defer database.Close()
 	log.Println("Connected to order database successfully")
 
+	// Create JWT manager for inter-service communication
+	jwtManager := auth.NewJWTManager(cfg.JWTSecret)
+	
+	// Generate service token for inter-service communication
+	serviceToken, err := jwtManager.GenerateServiceToken("order-service")
+	if err != nil {
+		log.Fatalf("Failed to generate service token: %v", err)
+	}
+
 	// Create user service client
-	userClient, err := client.NewUserServiceClient(cfg.UserServiceAddr)
+	userClient, err := client.NewUserServiceClient(cfg.UserServiceAddr, serviceToken)
 	if err != nil {
 		log.Fatalf("Failed to create user service client: %v", err)
 	}
 	defer userClient.Close()
 	log.Printf("Connected to user service at %s", cfg.UserServiceAddr)
 
+	// Create product service client
+	productClient, err := client.NewProductServiceClient(cfg.ProductServiceAddr, serviceToken)
+	if err != nil {
+		log.Fatalf("Failed to create product service client: %v", err)
+	}
+	defer productClient.Close()
+	log.Printf("Connected to product service at %s", cfg.ProductServiceAddr)
+
 	// Create repository
 	orderRepo := db.NewOrderRepository(database)
 
-	// Create gRPC server
-	s := grpc.NewServer()
+	// Create gRPC server with authentication
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(jwtManager.UnaryAuthInterceptor()),
+	)
 	
 	// Register service
-	orderHandler := handlers.NewOrderServiceServer(orderRepo, userClient)
+	orderHandler := handlers.NewOrderServiceServer(orderRepo, userClient, productClient)
 	order.RegisterOrderServiceServer(s, orderHandler)
 	
 	// Enable reflection for grpcurl and other tools

@@ -8,16 +8,16 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/terminator791/Simple-gRPC-go/pkg/auth"
-	"github.com/terminator791/Simple-gRPC-go/pkg/user"
-	"github.com/terminator791/Simple-gRPC-go/user-service/internal/config"
-	"github.com/terminator791/Simple-gRPC-go/user-service/internal/db"
-	"github.com/terminator791/Simple-gRPC-go/user-service/internal/handlers"
+	"github.com/terminator791/Simple-gRPC-go/pkg/product"
+	"github.com/terminator791/Simple-gRPC-go/product-service/internal/config"
+	"github.com/terminator791/Simple-gRPC-go/product-service/internal/db"
+	"github.com/terminator791/Simple-gRPC-go/product-service/internal/handlers"
 )
 
 func main() {
 	// Load configuration
 	cfg := config.Load()
-	log.Printf("Starting user service on port %s", cfg.Port)
+	log.Printf("Starting product service on port %s", cfg.Port)
 
 	// Connect to database
 	database, err := db.Connect(cfg.DatabaseURL)
@@ -25,10 +25,10 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer database.Close()
-	log.Println("Connected to database successfully")
+	log.Println("Connected to product database successfully")
 
 	// Create repository
-	userRepo := db.NewUserRepository(database)
+	productRepo := db.NewProductRepository(database)
 
 	// Create JWT manager for authentication
 	jwtManager := auth.NewJWTManager(cfg.JWTSecret)
@@ -37,11 +37,11 @@ func main() {
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(jwtManager.UnaryAuthInterceptor()),
 	)
-	
+
 	// Register service
-	userHandler := handlers.NewUserServiceServer(userRepo, jwtManager)
-	user.RegisterUserServiceServer(s, userHandler)
-	
+	productHandler := handlers.NewProductServiceServer(productRepo)
+	product.RegisterProductServiceServer(s, productHandler)
+
 	// Enable reflection for grpcurl and other tools
 	reflection.Register(s)
 
@@ -51,7 +51,7 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	log.Printf("User service listening on port %s", cfg.Port)
+	log.Printf("Product service listening on port %s", cfg.Port)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

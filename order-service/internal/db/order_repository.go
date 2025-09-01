@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -35,7 +36,7 @@ func Connect(databaseURL string) (*sqlx.DB, error) {
 
 func (r *OrderRepository) GetByID(orderID int64) (*models.Order, error) {
 	var order models.Order
-	query := `SELECT id, user_id, product_name, amount, quantity, status, created_at FROM orders WHERE id = $1`
+	query := `SELECT id, user_id, product_id, product_name, amount, quantity, status, reservation_id, created_at, updated_at FROM orders WHERE id = $1`
 	
 	err := r.db.Get(&order, query, orderID)
 	if err != nil {
@@ -48,17 +49,28 @@ func (r *OrderRepository) GetByID(orderID int64) (*models.Order, error) {
 	return &order, nil
 }
 
-func (r *OrderRepository) Create(userID int64, productName string, amount float64, quantity int32) (*models.Order, error) {
+func (r *OrderRepository) Create(userID, productID int64, productName string, amount float64, quantity int32, reservationID string) (*models.Order, error) {
 	var order models.Order
+	now := time.Now()
 	query := `
-		INSERT INTO orders (user_id, product_name, amount, quantity, status) 
-		VALUES ($1, $2, $3, $4, 'pending') 
-		RETURNING id, user_id, product_name, amount, quantity, status, created_at`
+		INSERT INTO orders (user_id, product_id, product_name, amount, quantity, status, reservation_id, created_at, updated_at) 
+		VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8) 
+		RETURNING id, user_id, product_id, product_name, amount, quantity, status, reservation_id, created_at, updated_at`
 	
-	err := r.db.Get(&order, query, userID, productName, amount, quantity)
+	err := r.db.Get(&order, query, userID, productID, productName, amount, quantity, reservationID, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create order: %w", err)
 	}
 	
 	return &order, nil
+}
+
+// UpdateStatus updates the order status
+func (r *OrderRepository) UpdateStatus(orderID int64, status string) error {
+	query := `UPDATE orders SET status = $1, updated_at = $2 WHERE id = $3`
+	_, err := r.db.Exec(query, status, time.Now(), orderID)
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+	return nil
 }

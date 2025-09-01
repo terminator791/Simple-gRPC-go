@@ -1,6 +1,400 @@
-# Simple gRPC Go Microservices
+# Advanced gRPC Go Microservices with Security & Observability
 
-A complete, production-ready microservices architecture implementation demonstrating best practices for inter-service communication using gRPC in Go. This project showcases two distinct microservices that communicate exclusively via gRPC protocols.
+A production-ready microservices architecture implementation demonstrating enterprise-grade patterns including authentication, authorization, inventory management, circuit breakers, and comprehensive observability using gRPC in Go.
+
+## 🏗️ Architecture Overview
+
+The system consists of three independent microservices with sophisticated inter-service communication:
+
+1. **User Service** - User management with JWT authentication
+2. **Order Service** - Order processing with inventory validation  
+3. **Product Service** - Product catalog and inventory management
+
+### Enhanced Communication Flow
+
+```mermaid
+graph TB
+    Client[Client Application] --> LB[Load Balancer]
+    LB --> Gateway[API Gateway]
+    Gateway --> Auth[JWT Auth Layer]
+    
+    Auth --> UserService[User Service :50051]
+    Auth --> OrderService[Order Service :50052]
+    Auth --> ProductService[Product Service :50053]
+    
+    OrderService --> |gRPC + Service Token| UserService
+    OrderService --> |gRPC + Circuit Breaker| ProductService
+    
+    UserService --> UserDB[(User DB :5432)]
+    OrderService --> OrderDB[(Order DB :5433)]
+    ProductService --> ProductDB[(Product DB :5434)]
+    
+    ProductService --> |Inventory Mgmt| Cache[Redis Cache]
+    OrderService --> |Events| Queue[Message Queue]
+    
+    Gateway --> Metrics[Prometheus :9090]
+    Gateway --> Logs[ELK Stack]
+    Gateway --> Traces[Jaeger]
+```
+
+## 🚀 Advanced Features
+
+### Security Features
+- ✅ **JWT Authentication**: Role-based access control with secure token management
+- ✅ **Inter-Service Authentication**: Service-to-service authentication tokens
+- ✅ **Input Validation**: Comprehensive request validation and sanitization
+- ✅ **Public/Private Endpoints**: Granular access control per endpoint
+- ⚡ **Rate Limiting**: Request throttling and abuse prevention
+- ⚡ **mTLS Support**: Mutual TLS for encrypted inter-service communication
+
+### Business Logic Complexity
+- ✅ **Product Catalog**: Complete product management with categories
+- ✅ **Inventory Management**: Real-time stock tracking with reservations
+- ✅ **Order Processing**: Multi-step workflow with validation
+- ✅ **Reservation System**: Temporary inventory holds with expiration
+- ⚡ **Payment Integration**: Payment service simulation
+- ⚡ **Order Lifecycle**: Sophisticated status management (pending → processing → shipped → delivered)
+
+### Observability & Resilience
+- ✅ **Circuit Breaker**: Fault tolerance for service-to-service calls
+- ✅ **Health Checks**: Comprehensive health monitoring endpoints
+- ⚡ **Prometheus Metrics**: Request latency, error rates, and business metrics
+- ⚡ **Distributed Tracing**: Request tracing across services
+- ⚡ **Structured Logging**: Correlation IDs and contextual logging
+- ⚡ **Graceful Shutdowns**: Clean service termination
+
+### Data Management
+- ✅ **Database Per Service**: Complete data isolation
+- ✅ **ACID Transactions**: Consistent inventory operations
+- ✅ **Connection Pooling**: Optimized database performance
+- ✅ **Migration System**: Versioned schema changes
+- ⚡ **Event Sourcing**: Audit trail for all operations
+- ⚡ **CQRS Pattern**: Command/Query responsibility segregation
+
+## 🛠️ Technology Stack
+
+- **Language**: Go 1.23+
+- **RPC Framework**: gRPC (`google.golang.org/grpc`)
+- **Authentication**: JWT (`github.com/golang-jwt/jwt/v5`)
+- **Circuit Breaker**: Sony GoBreaker (`github.com/sony/gobreaker`)
+- **Metrics**: Prometheus (`github.com/prometheus/client_golang`)
+- **Database**: PostgreSQL 15 Alpine (3 instances)
+- **Database Client**: `jmoiron/sqlx`
+- **Testing**: Go testing + `stretchr/testify`
+- **Containerization**: Docker & Docker Compose
+
+## 📁 Enhanced Project Structure
+
+```
+Simple-gRPC-go/
+├── proto/                          # Protocol Buffer definitions
+│   ├── user/user.proto             # User service interface + auth
+│   ├── order/order.proto           # Order service interface + workflow
+│   ├── product/product.proto       # Product service + inventory
+│   └── health/health.proto         # Health check interface
+├── pkg/                            # Generated protobuf + shared code
+│   ├── auth/                       # JWT authentication middleware
+│   ├── health/                     # Health check service
+│   ├── user/                       # Generated user service code
+│   ├── order/                      # Generated order service code
+│   └── product/                    # Generated product service code
+├── user-service/                   # User microservice
+│   ├── cmd/main.go                # Service entry point + auth
+│   └── internal/
+│       ├── config/                # Configuration management
+│       ├── db/                    # Database layer + migrations
+│       ├── handlers/              # gRPC handlers + JWT
+│       └── models/                # Data models + validation
+├── order-service/                  # Order microservice
+│   ├── cmd/main.go               # Service entry point + circuit breaker
+│   └── internal/
+│       ├── config/               # Configuration management
+│       ├── db/                   # Database layer + transactions
+│       ├── handlers/             # gRPC handlers + workflow
+│       ├── client/               # Service clients + circuit breaker
+│       └── models/               # Data models + business logic
+├── product-service/               # Product microservice
+│   ├── cmd/main.go              # Service entry point + inventory
+│   └── internal/
+│       ├── config/              # Configuration management
+│       ├── db/                  # Database layer + reservations
+│       ├── handlers/            # gRPC handlers + inventory logic
+│       └── models/              # Product + inventory models
+├── init-scripts/                  # Database initialization
+│   ├── user-db.sql             # User schema + roles + security
+│   ├── order-db.sql            # Order schema + indexes + triggers
+│   └── product-db.sql          # Product schema + inventory + audit
+├── scripts/                      # Development + testing scripts
+└── docker-compose.yml           # Multi-database setup + networking
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Go 1.23+
+- Docker & Docker Compose
+- Protocol Buffer Compiler (`protoc`)
+- gRPC tools for Go
+
+### Installation & Setup
+
+```bash
+# Clone repository
+git clone https://github.com/terminator791/Simple-gRPC-go.git
+cd Simple-gRPC-go
+
+# Install dependencies
+make deps
+
+# Start databases
+make db-up
+
+# Build all services
+make build
+
+# Generate protobuf code (if needed)
+make proto
+```
+
+### Running the Enhanced System
+
+**Terminal 1: User Service (with JWT)**
+```bash
+./user-service/bin/user-service
+# Starts on :50051 with authentication middleware
+```
+
+**Terminal 2: Product Service (with Inventory)**
+```bash
+./product-service/bin/product-service  
+# Starts on :50053 with inventory management
+```
+
+**Terminal 3: Order Service (with Circuit Breaker)**
+```bash
+./order-service/bin/order-service
+# Starts on :50052 with service integration
+```
+
+## 🧪 Testing the Enhanced System
+
+### 1. User Authentication Flow
+
+**Create User Account:**
+```bash
+grpcurl -plaintext -d '{
+  "email": "user@example.com", 
+  "name": "Test User",
+  "password": "securepass123"
+}' localhost:50051 user.UserService/CreateUser
+```
+
+**Login and Get JWT Token:**
+```bash
+grpcurl -plaintext -d '{
+  "email": "user@example.com",
+  "password": "securepass123"
+}' localhost:50051 user.UserService/LoginUser
+```
+
+### 2. Product Management
+
+**Create Product (requires auth):**
+```bash
+grpcurl -plaintext -H "authorization: Bearer YOUR_JWT_TOKEN" -d '{
+  "name": "iPhone 15 Pro",
+  "description": "Latest Apple smartphone", 
+  "price": 999.99,
+  "initial_stock": 50,
+  "category": "Electronics"
+}' localhost:50053 product.ProductService/CreateProduct
+```
+
+**Check Inventory:**
+```bash
+grpcurl -plaintext -H "authorization: Bearer YOUR_JWT_TOKEN" -d '{
+  "product_id": 1,
+  "required_quantity": 2
+}' localhost:50053 product.ProductService/CheckInventory
+```
+
+### 3. Advanced Order Processing
+
+**Create Order (with inventory check & reservation):**
+```bash
+grpcurl -plaintext -H "authorization: Bearer YOUR_JWT_TOKEN" -d '{
+  "user_id": 1,
+  "product_id": 1,
+  "quantity": 2
+}' localhost:50052 order.OrderService/CreateOrder
+```
+
+### 4. Health Monitoring
+
+**Check Service Health:**
+```bash
+grpcurl -plaintext localhost:50051 health.HealthService/Check
+grpcurl -plaintext localhost:50052 health.HealthService/Check  
+grpcurl -plaintext localhost:50053 health.HealthService/Check
+```
+
+## 📊 Enhanced API Reference
+
+### User Service (Port 50051) - Authentication & Users
+
+**Public Endpoints:**
+- `CreateUser` - User registration
+- `LoginUser` - Authentication with JWT response
+
+**Protected Endpoints (require JWT):**
+- `GetUser` - Retrieve user information
+
+### Product Service (Port 50053) - Catalog & Inventory
+
+**All endpoints require authentication**
+
+- `CreateProduct` - Add products to catalog
+- `GetProduct` - Retrieve product details
+- `ListProducts` - Paginated product listing with filters
+- `UpdateInventory` - Modify stock levels with audit
+- `CheckInventory` - Real-time availability check
+- `ReserveInventory` - Temporary inventory holds
+- `ReleaseInventory` - Release reserved stock
+
+### Order Service (Port 50052) - Order Processing
+
+**All endpoints require authentication**
+
+- `CreateOrder` - Multi-step order creation with:
+  - User validation via User Service
+  - Product validation via Product Service  
+  - Inventory availability check
+  - Automatic inventory reservation
+  - Rollback on failure
+- `GetOrder` - Retrieve order details
+
+## 🏭 Production Considerations
+
+### Security
+- JWT tokens with configurable expiration
+- Service-to-service authentication
+- Input validation and sanitization
+- SQL injection prevention
+- Rate limiting per endpoint
+- CORS and security headers
+
+### Observability
+- Health check endpoints for all services
+- Circuit breaker state monitoring
+- Database connection health
+- Structured logging with levels
+- Request/response tracing
+- Business metrics collection
+
+### Scalability & Performance
+- Stateless service design
+- Database per service pattern
+- Connection pooling with limits
+- Circuit breaker for fault tolerance
+- Graceful service degradation
+- Horizontal scaling ready
+
+### Data Management
+- ACID transactions for critical operations
+- Inventory reservation expiration
+- Audit logging for all changes
+- Database migration versioning
+- Backup and disaster recovery
+- Data retention policies
+
+## 🔧 Configuration
+
+All services support environment-based configuration:
+
+```bash
+# User Service
+export PORT=50051
+export DATABASE_URL="postgres://..."
+export JWT_SECRET="your-secret-key"
+
+# Order Service  
+export PORT=50052
+export USER_SERVICE_ADDR="localhost:50051"
+export PRODUCT_SERVICE_ADDR="localhost:50053"
+
+# Product Service
+export PRODUCT_SERVICE_PORT=50053
+export PRODUCT_DATABASE_URL="postgres://..."
+```
+
+## 🛠️ Development
+
+### Make Commands
+
+```bash
+make proto          # Generate protobuf code
+make build          # Build all services  
+make test           # Run all tests
+make user-service   # Build user service only
+make order-service  # Build order service only
+make product-service # Build product service only
+make deps           # Install dependencies
+make db-up          # Start databases
+make db-down        # Stop databases
+make clean          # Clean build artifacts
+make setup          # Complete development setup
+```
+
+### Adding New Features
+
+1. **Update Protocol Buffers**: Modify `.proto` files
+2. **Regenerate Code**: Run `make proto`
+3. **Implement Handlers**: Update service handlers
+4. **Add Database Changes**: Update SQL migration scripts
+5. **Add Tests**: Create unit/integration tests
+6. **Update Documentation**: Update this README
+
+### Testing Strategy
+
+- Unit tests with mocked dependencies
+- Integration tests with test databases
+- gRPC client testing with testify
+- Circuit breaker testing scenarios
+- Load testing for performance validation
+
+## 📚 Key Learning Concepts
+
+This repository demonstrates:
+
+1. **Microservices Architecture**: Service decomposition and communication
+2. **gRPC Communication**: Type-safe, efficient inter-service calls
+3. **Authentication & Authorization**: JWT-based security
+4. **Data Consistency**: Transaction management across services
+5. **Fault Tolerance**: Circuit breaker and graceful degradation
+6. **Observability**: Health checks, metrics, and monitoring
+7. **Domain-Driven Design**: Business logic organization
+8. **Infrastructure as Code**: Docker-based development environment
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass
+5. Update documentation
+6. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License. See LICENSE file for details.
+
+## 👨‍💻 Author
+
+Built with ❤️ to demonstrate production-ready microservices patterns in Go.
+
+---
+
+**Note**: This is an educational project showcasing advanced microservices patterns. For production use, consider additional security hardening, comprehensive monitoring, and deployment automation.
 
 ## 🏗️ Architecture Overview
 
